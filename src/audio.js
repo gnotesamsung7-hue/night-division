@@ -37,6 +37,7 @@ export const sfx = {
   foul() { tone(210, 120, 0.4, 'sawtooth', 0.14); vibrate([50, 50, 50]); },
   freed() { [784, 988, 1319, 1568].forEach((f, i) => tone(f, f, 0.12, 'sine', 0.11, i * 0.06)); vibrate(15); },
   radio() { noise(0.08, 0.08, 2500, 3); tone(1800, 1800, 0.04, 'square', 0.04, 0.08); },
+  lock() { tone(2400, 2900, 0.05, 'square', 0.04); tone(3200, 3200, 0.04, 'square', 0.03, 0.05); },
   warn() { tone(760, 760, 0.07, 'square', 0.08); tone(760, 760, 0.07, 'square', 0.08, 0.12); },
   clear() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.2, 'triangle', 0.12, i * 0.09)); },
   fail() { [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.98, 0.3, 'triangle', 0.14, i * 0.22)); },

@@ -24,6 +24,8 @@ canvas#pv { position: fixed; right: 10px; bottom: calc(var(--sab) + 10px); width
 .screen.show { display: flex; }
 
 .logo { display: flex; flex-direction: column; line-height: .82; margin-bottom: 14px; transform: skewX(-8deg); }
+.logo small { font-weight: 700; font-style: italic; font-size: clamp(16px, 5vw, 24px); letter-spacing: .35em; text-transform: uppercase;
+  color: var(--amber); text-shadow: 0 0 12px rgba(255,181,71,.7); margin: 0 0 10px .3em; line-height: 1; }
 .logo span { font-weight: 900; font-style: italic; font-size: clamp(54px, 18vw, 92px); letter-spacing: -.02em; color: var(--core);
   text-shadow: 0 0 18px rgba(111,243,255,.9), 0 0 42px rgba(111,243,255,.5); }
 .logo span + span { color: var(--cyan); margin-left: .45em; }
@@ -74,3 +76,36 @@ h2.bad { color: var(--red); text-shadow: 0 0 16px rgba(255,59,92,.6); }
 .seg { display: flex; gap: 6px; }
 .seg button { flex: 1; font: 600 14px Kanit, sans-serif; padding: 9px 6px; border-radius: 10px; border: 2px solid rgba(243,240,255,.3); background: transparent; color: var(--cream); }
 .seg button.on { background: var(--cyan); color: var(--ink); border-color: var(--cyan); }
+
+#title { justify-content: flex-end; background: linear-gradient(rgba(10,8,36,0) 0%, rgba(10,8,36,.2) 35%, rgba(10,8,36,.92) 70%); }
+.logo span { -webkit-text-stroke: 1px rgba(18,10,36,.6); }
+.row-links { display: flex; gap: 18px; }
+
+/* visual-novel story screen */
+.vn { justify-content: flex-end; background: linear-gradient(rgba(10,8,36,0) 50%, rgba(10,8,36,.75)); padding-bottom: calc(var(--sab) + 18px); cursor: pointer; }
+.skip { position: absolute; right: 14px; top: calc(var(--sat) + 14px); font: italic 700 14px Kanit, sans-serif; color: var(--cream);
+  background: rgba(15,20,48,.7); border: 1px solid rgba(243,240,255,.4); border-radius: 999px; padding: 6px 14px; }
+.vnbox { position: relative; width: min(420px, 100%); text-align: left; background: rgba(12,10,40,.92); border: 2px solid var(--cyan);
+  border-radius: 6px 22px 6px 22px; padding: 22px 18px 14px; box-shadow: 0 0 24px rgba(111,243,255,.35), inset 0 0 30px rgba(111,243,255,.08); }
+.vnbox .who { position: absolute; top: -16px; left: 14px; background: var(--magenta); color: #fff; font: italic 900 14px Kanit, sans-serif;
+  padding: 3px 14px; transform: skewX(-12deg); box-shadow: 3px 3px 0 #120A24; }
+.vnbox p { margin: 0; font-size: 17px; line-height: 1.55; min-height: 4.6em; }
+.vnbox .tap { text-align: right; color: var(--cyan); font-size: 12px; margin-top: 6px; animation: blink 1.2s infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+
+/* case-file briefing */
+.casefile { position: relative; width: min(360px, 100%); text-align: left; background: #F3ECDC; color: #1B1830; border-radius: 4px;
+  padding: 22px 18px 16px; margin-bottom: 14px; box-shadow: 6px 6px 0 #120A24, 0 0 30px rgba(111,243,255,.25); transform: rotate(-1deg); }
+.casefile::before { content: ''; position: absolute; top: -12px; left: 18px; width: 110px; height: 22px; background: #E3D6B8; border-radius: 6px 6px 0 0; }
+.casefile .stamp { position: absolute; right: 12px; top: 14px; border: 3px solid #D2283F; color: #D2283F; font: italic 900 13px Kanit, sans-serif;
+  padding: 2px 8px; transform: rotate(8deg); letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.casefile .caseno { font: 700 13px Kanit, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #6B5F86; }
+.casefile h2 { color: #1B1830; text-shadow: none; font-size: 28px; margin: 2px 0 0; }
+.casefile .bplace { font-size: 13px; color: #6B5F86; margin-bottom: 10px; }
+.casefile p { font-size: 15px; line-height: 1.5; margin: 0 0 10px; }
+.casefile .objhead { font: italic 900 14px Kanit, sans-serif; color: #D2283F; text-transform: uppercase; letter-spacing: .1em; }
+.casefile ul { margin: 4px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.5; }
+
+.field input[type=text] { width: 100%; font: 600 16px Kanit, sans-serif; padding: 10px 12px; border-radius: 10px; border: 2px solid rgba(243,240,255,.3);
+  background: rgba(26,33,80,.85); color: var(--cream); user-select: text; -webkit-user-select: text; }
+.mission .place em { font-style: italic; color: var(--violet); }

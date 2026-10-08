@@ -1,12 +1,13 @@
 // Runs one mission: steps, spawns, combat, energy, scoring, HUD and effects.
-import { V, drawScene, speedLines, glow } from './view.js';
+import { V, drawScene, speedLines, glow, starPath, focusLines } from './view.js';
 import { TYPES, makeEnemy } from './enemies.js';
 import { sfx } from './audio.js';
-import { settings } from './storage.js';
+import { settings, fillName } from './storage.js';
 
 export const MAX_ENERGY = 6;
 const BLAST_MIN = 3, LIVES = 3;
 const C = { cyan: '#6FF3FF', core: '#EFFFFF', violet: '#B65CFF', magenta: '#FF4FB0', amber: '#FFB547', red: '#FF3B5C', cream: '#F3F0FF', muted: '#A9A6D6' };
+const LOCK = { strong: { r: 100, pull: 0.75 }, light: { r: 60, pull: 0.4 }, off: null };
 const FONT = (w, size) => `italic ${w} ${size}px Kanit, system-ui, sans-serif`;
 
 export class Game {
@@ -19,6 +20,7 @@ export class Game {
     this.scroll = 0; this.adv = 0; this.shake = 0; this.flash = 0; this.flashCol = C.red;
     this.beam = null; this.banner = null; this.emptyFx = 0; this.rechargeFx = 0;
     this.over = false; this.paused = false; this.handPaused = false; this.awayRecharged = false;
+    this.lock = null; this.lockT = 0; this.dAim = null; this.hitstop = 0; this.impact = 0;
     this.next();
   }
 
@@ -34,9 +36,9 @@ export class Game {
     this.stepT = 0; this.doneT = null; this.flags = {};
     if (s.title) this.banner = { text: s.title, t: 2.6 };
     if (s.energy !== undefined) this.energy = s.energy;
-    this.hint = typeof s.hint === 'object' ? (s.hint[this.mode] || '') : (s.hint || '');
+    this.hint = fillName(typeof s.hint === 'object' ? (s.hint[this.mode] || '') : (s.hint || ''));
     this.adv = s.advance ? 1.4 : 0;
-    (s.say || []).forEach(([who, text]) => this.subs.push({ who, text }));
+    (s.say || []).forEach(([who, text]) => this.subs.push({ who, text: fillName(text) }));
     this.queue = (s.spawns || []).map(sp => ({ ...sp, at: sp.delay || 0 })).sort((a, b) => a.at - b.at);
   }
 
@@ -63,12 +65,14 @@ export class Game {
       if (this.handPaused) return;
     }
     if (inp.trig.holding && inp.trig.charge > 0) sfx.chargeLevel(inp.trig.charge);
+    this.updateLock(dt);
 
     // radio subtitles
     if (!this.sub && this.subs.length) { const n = this.subs.shift(); this.sub = { ...n, t: Math.max(2.6, n.text.length * 0.06) }; sfx.radio(); }
     if (this.sub && (this.sub.t -= dt) <= 0) this.sub = null;
 
     if (this.adv > 0) { this.adv -= dt; this.scroll += dt * 0.32; return; }
+    if (this.hitstop > 0) { this.hitstop -= dt; return; }
 
     this.stepT += dt;
     while (this.queue.length && this.queue[0].at <= this.stepT) this.ents.push(makeEnemy(this.queue.shift()));
@@ -87,6 +91,33 @@ export class Game {
     else if ((this.doneT -= dt) <= 0) this.next();
   }
 
+  /* ---------------- target lock ---------------- */
+  lockPoint(e) {
+    if (e.dead || e.type === 'civilian') return null;
+    if (e.type === 'phantom' && !e.solid) return null;
+    return TYPES[e.type].center(e);
+  }
+  updateLock(dt) {
+    const cfg = LOCK[settings.lock], a = this.input.aim;
+    const usable = cfg && a.seen && this.adv <= 0 && (this.mode === 'touch' || this.input.hand.present);
+    let best = null;
+    if (usable) {
+      const R = cfg.r * (V.B / 390); let bd = Infinity;
+      for (const e of this.ents) {
+        const c = this.lockPoint(e); if (!c) continue;
+        const d = Math.hypot(c.x - a.x, c.y - a.y), lim = (e === this.lock ? R * 1.4 : R) + c.r;
+        if (d < lim && d < bd) { bd = d; best = e; }
+      }
+    }
+    if (best && best !== this.lock) { sfx.lock(); this.lockT = 0; }
+    this.lock = best; this.lockT += dt;
+    // displayed crosshair slides toward the locked target
+    let tx = a.x, ty = a.y;
+    if (best) { const c = this.lockPoint(best); tx += (c.x - a.x) * cfg.pull; ty += (c.y - a.y) * cfg.pull; }
+    if (!this.dAim) this.dAim = { x: tx, y: ty };
+    const k = Math.min(1, dt * 18); this.dAim.x += (tx - this.dAim.x) * k; this.dAim.y += (ty - this.dAim.y) * k;
+  }
+
   updateFx(dt) {
     for (const p of this.parts) { p.life -= dt; p.vy += (p.g || 0) * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
     this.parts = this.parts.filter(p => p.life > 0);
@@ -96,6 +127,7 @@ export class Game {
     if (this.banner && (this.banner.t -= dt) <= 0) this.banner = null;
     this.shake = Math.max(0, this.shake - dt * 2.5); this.flash = Math.max(0, this.flash - dt * 2.2);
     this.emptyFx = Math.max(0, this.emptyFx - dt * 2); this.rechargeFx = Math.max(0, this.rechargeFx - dt * 1.5);
+    this.impact = Math.max(0, this.impact - dt);
   }
 
   /* ---------------- actions ---------------- */
@@ -117,8 +149,18 @@ export class Game {
     if (this.adv > 0) return;
     if (this.energy <= 0) { sfx.empty(); this.emptyFx = 1; return; }
     this.energy--; this.st.shots++; sfx.shot();
+    if (this.mode === 'touch') this.updateLock(0);
+    const L = this.lock && !this.lock.dead && this.ents.includes(this.lock) ? this.lock : null;
+    if (L) {
+      const c = TYPES[L.type].center(L);
+      this.bolts.push({ x0: V.W / 2, y0: V.H + 10, x1: c.x, y1: c.y, t: 0.14, max: 0.14 });
+      this.st.hits++;
+      if (L.type === 'possessed') return this.free(L);
+      if (L.type === 'lantern' && L.armored) { this.st.hits--; L.ripple = 1; sfx.phase(); return this.text(c.x, c.y - 24, 'Warded', C.cyan); }
+      return this.damage(L, 1);
+    }
     this.bolts.push({ x0: V.W / 2, y0: V.H + 10, x1: x, y1: y, t: 0.14, max: 0.14 });
-    const assist = settings.assist ? 12 : 0;
+    const assist = LOCK[settings.lock] ? 14 : 6;
     let phased = null, armor = null;
     for (const e of [...this.ents].sort((a, b) => a.z - b.z)) {
       const r = TYPES[e.type].hit(e, x, y, assist);
@@ -138,7 +180,8 @@ export class Game {
     if (this.adv > 0) return;
     if (this.energy < BLAST_MIN) { sfx.empty(); this.emptyFx = 1; return this.text(x, y - 30, 'Not enough energy', C.red); }
     this.energy = 0; this.st.shots++; sfx.blast();
-    this.shake = 1; this.flash = 0.9; this.flashCol = C.core;
+    this.shake = 1; this.flash = 0.9; this.flashCol = C.core; this.impact = 0.1;
+    if (this.lock && this.ents.includes(this.lock)) { const c = TYPES[this.lock.type].center(this.lock); x = c.x; y = c.y; }
     const ox = V.W / 2, oy = V.H + 10, len = Math.hypot(x - ox, y - oy) || 1, ux = (x - ox) / len, uy = (y - oy) / len;
     const far = Math.hypot(V.W, V.H) * 1.5, width = Math.max(26, V.W * 0.09);
     this.beam = { x0: ox, y0: oy, x1: ox + ux * far, y1: oy + uy * far, w: width, t: 0.6, max: 0.6 };
@@ -158,7 +201,9 @@ export class Game {
     const c = TYPES[e.type].center(e);
     e.hp -= dmg; e.flash = 1;
     if (e.hp > 0) { sfx.hit(); return this.burst(c.x, c.y, C.core, 6, 0.4); }
-    e.dead = true; this.st.kills++;
+    e.dead = true; this.st.kills++; this.hitstop = blast ? 0 : 0.05;
+    if (this.lock === e) this.lock = null;
+    this.parts.push({ x: c.x, y: c.y, vx: 0, vy: 0, life: 0.35, max: 0.35, ring: true, r0: c.r, r1: c.r * 3.2, color: TYPES[e.type].color });
     const close = e.state === 'attack', pts = TYPES[e.type].pts * (close ? 2 : 1);
     this.score += pts; sfx.kill();
     this.burst(c.x, c.y, TYPES[e.type].color, blast ? 26 : 18);
@@ -167,7 +212,8 @@ export class Game {
 
   free(e) {
     const c = TYPES.possessed.center(e);
-    e.type = 'civilian'; e.flash = 0; this.st.freed++;
+    e.type = 'civilian'; e.flash = 0; this.st.freed++; if (this.lock === e) this.lock = null;
+    this.parts.push({ x: c.x, y: c.y, vx: 0, vy: 0, life: 0.4, max: 0.4, ring: true, r0: c.r, r1: c.r * 3.5, color: C.cyan });
     this.score += TYPES.possessed.pts; sfx.freed();
     this.burst(c.x, c.y, C.violet, 20);
     this.text(c.x, c.y - 26, 'Freed +' + TYPES.possessed.pts, C.cyan);
@@ -199,7 +245,7 @@ export class Game {
   burst(x, y, color, n, life = 0.7) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, s = (80 + Math.random() * 260) * (V.B / 400);
-      this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40, life, max: life, color, size: 2 + Math.random() * 4, g: 220 });
+      this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40, life, max: life, color, size: 2 + Math.random() * 4, g: 220, star: i % 3 === 0, rot: Math.random() * 3 });
     }
   }
   text(x, y, text, color, scale = 1) { this.parts.push({ x, y, vx: 0, vy: -55, life: 1, max: 1, color, text, scale }); }
@@ -215,12 +261,30 @@ export class Game {
       TYPES[e.type].draw(ctx, e, t);
       if (e.state === 'attack') this.drawWarning(ctx, e, t);
     }
+    const tr = this.input.trig;
+    if (tr.holding && tr.charge > 0 && this.energy >= BLAST_MIN) focusLines(ctx, tr.charge, t);
+    if (this.impact > 0) { ctx.fillStyle = 'rgba(4,3,14,0.9)'; ctx.fillRect(-20, -20, V.W + 40, V.H + 40); focusLines(ctx, 1, t); }
     this.drawBolts(ctx); this.drawBeam(ctx, t); this.drawParts(ctx);
+    this.drawLock(ctx, t);
     ctx.restore();
     if (this.flash > 0) { ctx.globalAlpha = this.flash * 0.4; ctx.fillStyle = this.flashCol; ctx.fillRect(0, 0, V.W, V.H); ctx.globalAlpha = 1; }
     this.drawCrosshair(ctx, now);
     this.drawHud(ctx, t);
     if (this.handPaused && !this.over) this.drawHandPaused(ctx);
+  }
+
+  drawLock(ctx, t) {
+    const L = this.lock; if (!L || L.dead) return;
+    const c = this.lockPoint(L); if (!c) return;
+    const k = Math.min(1, this.lockT / 0.15), R = c.r * (1.25 + (1 - k) * 1.5) + 6, rot = t * 1.5;
+    ctx.save(); ctx.translate(c.x, c.y); ctx.globalAlpha = 0.5 + 0.5 * k;
+    ctx.strokeStyle = C.amber; ctx.lineWidth = 3; ctx.lineCap = 'square';
+    for (let i = 0; i < 4; i++) {
+      const a = rot + i * Math.PI / 2;
+      ctx.save(); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(R, -R * 0.35); ctx.lineTo(R, 0); ctx.lineTo(R - R * 0.35, 0); ctx.stroke(); ctx.restore();
+    }
+    ctx.font = FONT(900, 12); ctx.textAlign = 'center'; ctx.fillStyle = C.amber; ctx.fillText('LOCK', 0, -R - 8);
+    ctx.restore();
   }
 
   drawWarning(ctx, e, t) {
@@ -262,9 +326,13 @@ export class Game {
         ctx.font = FONT(900, 20 * p.scale); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(15,20,48,.85)'; ctx.strokeText(p.text, p.x, p.y);
         ctx.fillStyle = p.color; ctx.fillText(p.text, p.x, p.y);
+      } else if (p.ring) {
+        ctx.strokeStyle = p.color; ctx.lineWidth = 4 * a + 1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r0 + (p.r1 - p.r0) * (1 - a), 0, Math.PI * 2); ctx.stroke();
       } else {
         ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = p.color;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2); ctx.fill();
+        if (p.star) { starPath(ctx, p.x, p.y, p.size * 2.2 * a, p.rot + p.life * 4); ctx.fill(); }
+        else { ctx.beginPath(); ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2); ctx.fill(); }
         ctx.globalCompositeOperation = 'source-over';
       }
     }
@@ -272,9 +340,9 @@ export class Game {
   }
 
   drawCrosshair(ctx, now) {
-    const a = this.input.aim, tr = this.input.trig;
+    const tr = this.input.trig, a = this.dAim && this.mode === 'camera' ? this.dAim : this.input.aim;
     if (this.mode !== 'camera' && !(tr.holding && tr.charge > 0)) return;
-    if (!a.seen) return;
+    if (!this.input.aim.seen) return;
     const present = this.mode === 'touch' || this.input.hand.present, r = 22, rot = now / 700;
     const col = this.energy > 0 ? C.cyan : C.red;
     ctx.save(); ctx.translate(a.x, a.y); ctx.globalAlpha = present ? 1 : 0.3;

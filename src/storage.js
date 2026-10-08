@@ -3,7 +3,7 @@ const get = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON
 const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 export const settings = Object.assign(
-  { trigger: 'thumb', thumbT: 42, pinchT: 32, smooth: 55, reach: 20, assist: 1, sound: 1 },
+  { trigger: 'thumb', thumbT: 42, pinchT: 32, smooth: 55, reach: 20, lock: 'strong', sound: 1, name: 'Mark Dave' },
   get('nd-settings', {})
 );
 export const saveSettings = () => put('nd-settings', settings);
@@ -17,4 +17,6 @@ export function recordResult(id, stars, score) {
   progress.missions[id] = m;
   put('nd-progress', progress);
 }
-export function resetProgress() { progress.missions = {}; put('nd-progress', progress); }
+export function resetProgress() { progress.missions = {}; progress.seenPrologue = false; put('nd-progress', progress); }
+export function markPrologueSeen() { progress.seenPrologue = true; put('nd-progress', progress); }
+export const fillName = s => (s || '').split('{name}').join((settings.name || '').trim() || 'Officer');

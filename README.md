@@ -1,6 +1,10 @@
-# Night Division
+# Mark Dave's Night Division
 
 A phone rail shooter played with your hand. Stand the phone upright, make a finger gun at the front camera, and fire spirit energy at otherworldly ghouls. Hand tracking runs in the browser with MediaPipe, and the video never leaves the phone.
+
+## Story
+
+Port Lumen's Lumen Beacon has kept the Veil between the city and the Underside sealed for a century. Three nights ago it went dark. As the Thin Night spreads, Captain Lira Santos sends Night Division's newest rookie, with the strongest spirit-sight in thirty years, to find out who put the light out.
 
 ## Controls
 
@@ -10,6 +14,7 @@ A phone rail shooter played with your hand. Stand the phone upright, make a fing
 | Spirit shot | Drop your thumb | Tap |
 | Spirit Blast | Keep your thumb down until the ring fills, then lift | Press and hold, then let go |
 | Recharge | Move your hand out of the camera view | Tap Recharge |
+| Target lock | Aim near a ghoul and the crosshair locks on | Tap near a ghoul |
 
 Hiding your hand for about 2 seconds pauses the game.
 
@@ -30,7 +35,8 @@ src/main.js       app start, case map, settings, main loop
 src/input.js      camera hand tracking, gestures, touch input
 src/game.js       mission runner: combat, energy, scoring, HUD
 src/enemies.js    ghoul, civilian and target types
-src/missions.js   mission scripts (pure data)
+src/missions.js   mission scripts and case briefings (pure data)
+src/story.js      prologue story pages
 src/view.js       perspective and scene backgrounds
 src/audio.js      synthesized sound effects
 src/storage.js    saved settings and progress

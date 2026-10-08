@@ -1,14 +1,15 @@
-import { V, resizeView, drawScene, glow } from './view.js';
+import { V, resizeView, drawScene, drawKeyArt } from './view.js';
 import { input, startCamera, stopCamera, pollInput, attachTouch, applySmoothing, resetGestures } from './input.js';
 import { Game } from './game.js';
 import { CHAPTER_1 } from './missions.js';
-import { settings, saveSettings, progress, recordResult, resetProgress } from './storage.js';
+import { settings, saveSettings, progress, recordResult, resetProgress, markPrologueSeen, fillName } from './storage.js';
+import { PROLOGUE } from './story.js';
 import { initAudio, sfx } from './audio.js';
 
 const $ = id => document.getElementById(id);
 const cv = $('game'), ctx = cv.getContext('2d'), pv = $('pv'), pctx = pv.getContext('2d'), video = $('cam');
-const SCREENS = ['title', 'map', 'results', 'fail', 'pause', 'settings'];
-let game = null, current = null, settingsReturn = null;
+const SCREENS = ['title', 'story', 'brief', 'map', 'results', 'fail', 'pause', 'settings'];
+let game = null, current = null, settingsReturn = null, bgScene = 'keyart', story = null;
 
 function show(id) { SCREENS.forEach(s => $(s).classList.toggle('show', s === id)); }
 function setPlayingUi(on) {
@@ -24,7 +25,7 @@ $('btnCamera').addEventListener('click', async () => {
   msg.style.display = 'none'; btn.disabled = true; btn.textContent = 'Starting camera…';
   try {
     await startCamera(video, s => (btn.textContent = s));
-    openMap();
+    afterModeChosen();
   } catch (e) {
     console.error(e); stopCamera();
     msg.style.display = 'block';
@@ -35,12 +36,46 @@ $('btnCamera').addEventListener('click', async () => {
   }
   btn.disabled = false; btn.textContent = 'Start with camera';
 });
-$('btnTouch').addEventListener('click', () => { initAudio(); stopCamera(); input.mode = 'touch'; openMap(); });
-$('btnBackTitle').addEventListener('click', () => { stopCamera(); input.mode = null; pv.style.display = 'none'; show('title'); });
+$('btnTouch').addEventListener('click', () => { initAudio(); stopCamera(); input.mode = 'touch'; afterModeChosen(); });
+function afterModeChosen() {
+  if (progress.seenPrologue) return openMap();
+  playStory(PROLOGUE, () => { markPrologueSeen(); openMap(); });
+}
+$('btnStory').addEventListener('click', () => { initAudio(); playStory(PROLOGUE, () => { markPrologueSeen(); bgScene = 'keyart'; show('title'); }); });
+
+/* ---------------- story (visual novel) ---------------- */
+function playStory(pages, done) { story = { pages, i: -1, done, typing: false, shown: 0, full: '' }; show('story'); nextPage(); }
+function nextPage() {
+  story.i++;
+  const p = story.pages[story.i];
+  if (!p) { const d = story.done; story = null; bgScene = 'keyart'; return d(); }
+  bgScene = p.scene || 'keyart';
+  const who = $('vnWho'); who.textContent = fillName(p.who); who.style.display = p.who ? 'block' : 'none';
+  story.full = fillName(p.text); story.shown = 0; story.typing = true; $('vnText').textContent = '';
+  if (p.who) sfx.radio();
+}
+$('story').addEventListener('click', e => {
+  if (!story || e.target.id === 'btnSkip') return;
+  if (story.typing) { story.typing = false; $('vnText').textContent = story.full; } else nextPage();
+});
+$('btnSkip').addEventListener('click', () => { if (!story) return; const d = story.done; story = null; bgScene = 'keyart'; d(); });
+
+/* ---------------- case briefing ---------------- */
+function openBriefing(m) {
+  game = null; setPlayingUi(false); bgScene = 'keyart'; current = m;
+  $('bCase').textContent = `${m.caseNo || 'Case'}: ${m.caseName || m.title}`;
+  $('bTitle').textContent = m.title; $('bPlace').textContent = m.place;
+  $('bText').textContent = fillName(m.brief || '');
+  $('bObj').innerHTML = (m.objectives || []).map(o => `<li>${fillName(o)}</li>`).join('');
+  show('brief');
+}
+$('btnBegin').addEventListener('click', () => startMission(current));
+$('btnBriefBack').addEventListener('click', openMap);
+$('btnBackTitle').addEventListener('click', () => { stopCamera(); input.mode = null; pv.style.display = 'none'; bgScene = 'keyart'; show('title'); });
 
 /* ---------------- case map ---------------- */
 function openMap() {
-  game = null; setPlayingUi(false); sfx.chargeStop();
+  game = null; setPlayingUi(false); sfx.chargeStop(); bgScene = 'keyart';
   pv.style.display = input.mode === 'camera' && input.camOn ? 'block' : 'none';
   const list = $('missionList'); list.innerHTML = '';
   CHAPTER_1.missions.forEach((m, i) => {
@@ -48,8 +83,8 @@ function openMap() {
     const rec = progress.missions[m.id];
     const b = document.createElement('button'); b.className = 'mission'; b.disabled = !unlocked;
     const stars = rec ? '★'.repeat(rec.stars) + '☆'.repeat(3 - rec.stars) : '';
-    b.innerHTML = `<span class="num">${m.num}</span><span><span class="name">${m.title}</span><span class="place">${m.comingSoon ? 'Coming soon' : m.place}${rec ? ` · best ${rec.best}` : ''}</span></span><span class="mstars">${stars}</span>`;
-    if (unlocked) b.addEventListener('click', () => startMission(m));
+    b.innerHTML = `<span class="num">${m.num}</span><span><span class="name">${m.title}</span><span class="place">${m.comingSoon ? `<em>Coming soon.</em> ${m.teaser || ''}` : m.place}${rec ? ` · best ${rec.best}` : ''}</span></span><span class="mstars">${stars}</span>`;
+    if (unlocked) b.addEventListener('click', () => openBriefing(m));
     list.appendChild(b);
   });
   show('map');
@@ -77,9 +112,9 @@ function showResults(r) {
     <div class="crit"><span>${r.stars[0] ? '★' : '☆'}</span> Case closed<br><span>${r.stars[1] ? '★' : '☆'}</span> Accuracy 65% or better<br><span>${r.stars[2] ? '★' : '☆'}</span> No civilians hit</div>`;
   const idx = CHAPTER_1.missions.indexOf(current), nxt = CHAPTER_1.missions[idx + 1];
   const nb = $('btnNext');
-  if (nxt && !nxt.comingSoon) { nb.style.display = 'block'; nb.textContent = 'Next case'; nb.onclick = () => startMission(nxt); }
+  if (nxt && !nxt.comingSoon) { nb.style.display = 'block'; nb.textContent = 'Next case'; nb.onclick = () => openBriefing(nxt); }
   else { nb.style.display = 'none'; }
-  $('resTitle').textContent = nxt && nxt.comingSoon ? 'Case closed. More cases coming soon' : 'Case closed';
+  $('resTitle').textContent = nxt && nxt.comingSoon ? 'Case closed. The next case is coming soon' : 'Case closed';
   show('results');
 }
 $('btnRetry').addEventListener('click', () => startMission(current));
@@ -107,11 +142,13 @@ document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').
 $('sTrig').addEventListener('input', e => { settings[settings.trigger === 'thumb' ? 'thumbT' : 'pinchT'] = +e.target.value; syncSettings(); });
 $('sSmooth').addEventListener('input', e => { settings.smooth = +e.target.value; syncSettings(); });
 $('sReach').addEventListener('input', e => { settings.reach = +e.target.value; syncSettings(); });
+$('sName').addEventListener('input', e => { settings.name = e.target.value; });
 function syncSettings() {
   const tv = settings.trigger === 'thumb' ? settings.thumbT : settings.pinchT;
   $('sTrig').value = tv; $('vTrig').textContent = (tv / 100).toFixed(2);
   $('sSmooth').value = settings.smooth; $('vSmooth').textContent = settings.smooth;
   $('sReach').value = settings.reach; $('vReach').textContent = settings.reach + '%';
+  if (document.activeElement !== $('sName')) $('sName').value = settings.name || '';
   document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v == settings[seg.dataset.key])));
   applySmoothing();
 }
@@ -146,15 +183,13 @@ function loop(now) {
     game.draw(ctx, now);
   } else {
     input.events.length = 0;
-    drawScene('market', ctx, now / 1000, now / 9000);
-    ctx.fillStyle = 'rgba(15,20,48,.35)'; ctx.fillRect(0, 0, V.W, V.H);
-    // a few idle wisps drifting behind the menus
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 4; i++) {
-      const x = V.W * (0.2 + 0.6 * ((Math.sin(now / 3000 + i * 1.7) + 1) / 2)), y = V.H * (0.3 + 0.12 * Math.sin(now / 1700 + i * 2.3) + i * 0.08);
-      glow(ctx, x, y, 26, 'rgba(182,92,255,.5)'); glow(ctx, x, y, 8, 'rgba(255,240,255,.9)');
+    if (bgScene === 'keyart') drawKeyArt(ctx, now / 1000);
+    else { drawScene(bgScene, ctx, now / 1000, now / 9000); ctx.fillStyle = 'rgba(10,8,36,.3)'; ctx.fillRect(0, 0, V.W, V.H); }
+    if (story && story.typing) {
+      story.shown += dt * 48; const n = Math.floor(story.shown);
+      $('vnText').textContent = story.full.slice(0, n);
+      if (n >= story.full.length) story.typing = false;
     }
-    ctx.restore();
   }
   drawPreview();
   requestAnimationFrame(loop);
