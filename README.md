@@ -34,7 +34,7 @@ style.css         menu and screen styling
 src/main.js       app start, case map, settings, main loop
 src/input.js      camera hand tracking, gestures, touch input
 src/game.js       mission runner: combat, energy, scoring, HUD
-src/enemies.js    ghoul, civilian and target types
+src/enemies.js    ghouls (wisp, phantom, dino, grub, imp), people and targets
 src/missions.js   mission scripts and case briefings (pure data)
 src/story.js      prologue story pages
 src/view.js       perspective and scene backgrounds

@@ -34,10 +34,11 @@ const RECORDS_ROOM = {
       hint: 'Free the possessed clerk. Do not hit the janitor.',
       spawns: [{ type: 'civilian', x: 1.3, z: 0.5, dir: -1, speed: 0.17 }, { type: 'possessed', x: -1.3, z: 0.32, dir: 1, speed: 0.15, delay: 1.2 }] },
     { say: [[D, "Here they come. Wisps fly straight at you. Phantoms can only be hit while they're solid."]],
-      hint: 'Clear the room',
+      hint: 'Clear the room. Waddling ghouls take two hits',
       spawns: [
         { type: 'wisp', x: -0.3, z: 0.9 }, { type: 'wisp', x: 0.4, z: 0.95, delay: 1.5 },
-        { type: 'phantom', x: 0, z: 0.85, delay: 3 }, { type: 'wisp', x: -0.5, z: 0.9, delay: 4.5 }, { type: 'wisp', x: 0.5, z: 0.9, delay: 5.5 }] },
+        { type: 'phantom', x: 0, z: 0.85, delay: 3 }, { type: 'wisp', x: -0.5, z: 0.9, delay: 4.5 }, { type: 'wisp', x: 0.5, z: 0.9, delay: 5.5 },
+        { type: 'dino', x: 0.2, z: 0.9, delay: 6.5 }] },
     { say: [[D, 'Archive is clear. Strange. Every file they knocked loose was a Beacon case.'], [D, 'Not bad for a rookie, {name}. Ninth Street needs you next.']], until: 'time', wait: 9 }
   ]
 };
@@ -49,7 +50,7 @@ const NIGHT_MARKET = {
   objectives: ['Clear the wisps without hitting civilians', 'Free every possessed shopper you can', 'Find where the ghouls are coming from'],
   steps: [
     { title: 'Ninth Street',
-      say: [[D, 'Reports of lights moving between the stalls on Ninth Street.'], [D, 'Civilians are still out. Watch your fire.']],
+      say: [[D, 'Reports of lights moving between the stalls on Ninth Street.'], [D, "On the Thin Night, ghouls borrow cute shapes to get close. Don't let the faces fool you."], [D, 'Civilians are still out. Watch your fire.']],
       spawns: [
         { type: 'wisp', x: -0.4, z: 0.95, delay: 1 }, { type: 'wisp', x: 0.3, z: 0.95, delay: 2.2 },
         { type: 'wisp', x: 0, z: 0.9, delay: 3.5 }, { type: 'wisp', x: -0.6, z: 0.85, delay: 4.2 }, { type: 'wisp', x: 0.6, z: 0.9, delay: 5.5 }] },
@@ -59,13 +60,14 @@ const NIGHT_MARKET = {
         { type: 'civilian', x: -1.3, z: 0.55, dir: 1 }, { type: 'possessed', x: 1.3, z: 0.4, dir: -1, delay: 0.8 },
         { type: 'wisp', x: -0.5, z: 0.5, drop: true, delay: 2 }, { type: 'wisp', x: 0.5, z: 0.55, drop: true, delay: 3.2 },
         { type: 'possessed', x: -1.3, z: 0.3, dir: 1, delay: 4.5 }, { type: 'civilian', x: 1.3, z: 0.35, dir: -1, delay: 5.5 },
-        { type: 'wisp', x: 0, z: 0.6, drop: true, delay: 6.5 }] },
+        { type: 'wisp', x: 0, z: 0.6, drop: true, delay: 6.5 }, { type: 'dino', x: -0.3, z: 0.95, delay: 7.5 }] },
     { title: 'Lantern Alley', advance: true,
-      say: [[D, "Phantoms in the alley. Wait for them to turn solid, then hit them twice."]],
+      say: [[D, "Phantoms in the alley. Wait for them to turn solid, then hit them twice."], [D, 'And that caterpillar with the camera is tougher than it looks. Three hits.']],
       spawns: [
         { type: 'phantom', x: -0.35, z: 0.9 }, { type: 'wisp', x: -1.4, tx: -0.5, z: 0.45, delay: 1.5 },
         { type: 'phantom', x: 0.35, z: 0.95, delay: 3 }, { type: 'wisp', x: 1.4, tx: 0.5, z: 0.45, delay: 4 },
-        { type: 'phantom', x: 0, z: 0.9, delay: 6 }, { type: 'wisp', x: -1.4, tx: -0.3, z: 0.35, delay: 7 }] },
+        { type: 'phantom', x: 0, z: 0.9, delay: 6 }, { type: 'wisp', x: -1.4, tx: -0.3, z: 0.35, delay: 7 },
+        { type: 'grub', x: 0.3, z: 0.95, delay: 8 }] },
     { title: 'Market Square', advance: true,
       say: [[D, "This is where it's coming from. Hold the square, Officer."]],
       spawns: [
@@ -75,7 +77,8 @@ const NIGHT_MARKET = {
         { type: 'wisp', x: 1.4, tx: 0.55, z: 0.4, delay: 6.5 }, { type: 'phantom', x: -0.4, z: 0.95, delay: 7.5 },
         { type: 'wisp', x: 0.3, z: 0.6, drop: true, delay: 9 }, { type: 'wisp', x: -1.4, tx: -0.55, z: 0.4, delay: 10 },
         { type: 'possessed', x: -1.3, z: 0.5, dir: 1, delay: 11 }, { type: 'phantom', x: 0.4, z: 0.9, delay: 12.5 },
-        { type: 'wisp', x: 0, z: 0.95, delay: 13.5 }, { type: 'wisp', x: -0.5, z: 0.95, delay: 14 }, { type: 'wisp', x: 0.5, z: 0.95, delay: 14.5 }] },
+        { type: 'wisp', x: 0, z: 0.95, delay: 13.5 }, { type: 'wisp', x: -0.5, z: 0.95, delay: 14 }, { type: 'wisp', x: 0.5, z: 0.95, delay: 14.5 },
+        { type: 'dino', x: -0.4, z: 0.95, delay: 3.5 }, { type: 'grub', x: 0.4, z: 0.95, delay: 8.5 }, { type: 'dino', x: 0.1, z: 0.95, delay: 16 }] },
     { say: [[D, 'Ninth Street is quiet. Good work, {name}.'], [D, 'Those wisps were all drifting one way, down the old subway stairs. Something underground is calling them.']], until: 'time', wait: 9 }
   ]
 };
