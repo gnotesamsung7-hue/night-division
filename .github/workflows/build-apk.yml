@@ -1,0 +1,59 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Bundle the game into the app (works offline)
+        run: |
+          WWW=android/app/src/main/assets/www
+          rm -rf "$WWW" && mkdir -p "$WWW/vendor"
+          cp index.html style.css "$WWW/"
+          cp -r src "$WWW/src"
+          (cd /tmp && npm pack @mediapipe/tasks-vision@0.10.14 >/dev/null && tar xzf mediapipe-tasks-vision-0.10.14.tgz)
+          cp /tmp/package/vision_bundle.mjs "$WWW/vendor/"
+          cp -r /tmp/package/wasm "$WWW/vendor/wasm"
+          curl -fsSL -o "$WWW/vendor/hand_landmarker.task" \
+            https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+          node android/offline-patch.mjs "$WWW/src/input.js"
+
+      - name: Build APK
+        working-directory: android
+        run: gradle assembleDebug --no-daemon
+
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk night-division.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: night-division-apk
+          path: night-division.apk
+
+      - name: Publish to the "apk-latest" release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete apk-latest --yes --cleanup-tag || true
+          gh release create apk-latest night-division.apk \
+            --target "$GITHUB_SHA" \
+            --title "Night Division APK (latest build)" \
+            --notes "Built from commit ${GITHUB_SHA::7}. On your phone, tap night-division.apk below to download and install."
