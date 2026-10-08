@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0F1430">
+<title>Night Division</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,600;1,700;1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+<video id="cam" playsinline muted autoplay></video>
+<canvas id="pv" width="80" height="106"></canvas>
+<button id="pauseBtn" class="icon-btn" aria-label="Pause">❚❚</button>
+<button id="rechargeBtn">Recharge</button>
+
+<section id="title" class="screen show">
+  <div class="logo"><span>Night</span><span>Division</span></div>
+  <p class="tag">A secret police unit for cases that aren't human. Your only weapon is your spirit.</p>
+  <div class="how">
+    <div><b>Aim</b>Point your finger gun</div>
+    <div><b>Shoot</b>Drop your thumb</div>
+    <div><b>Blast</b>Hold your thumb down</div>
+    <div><b>Recharge</b>Move your hand out of view</div>
+  </div>
+  <div class="msg" id="titleMsg"></div>
+  <button class="big main" id="btnCamera">Start with camera</button>
+  <button class="big alt" id="btnTouch">Play with touch</button>
+  <button class="link" id="btnSettings1">Settings</button>
+  <p class="setup">Stand your phone upright at chest height. Step back an arm's length and keep your hand level with the screen. Video stays on your phone.</p>
+</section>
+
+<section id="map" class="screen">
+  <h2 class="chapter">Chapter 1</h2>
+  <p class="chapter-name">The Thin Night</p>
+  <div id="missionList"></div>
+  <button class="link" id="btnBackTitle">Back to title</button>
+</section>
+
+<section id="results" class="screen">
+  <h2 id="resTitle">Case closed</h2>
+  <div class="stars" id="resStars"></div>
+  <div class="final" id="resScore">0</div>
+  <div class="stats" id="resStats"></div>
+  <button class="big main" id="btnNext">Next case</button>
+  <button class="big alt" id="btnRetry">Replay case</button>
+  <button class="link" id="btnMap1">Case map</button>
+</section>
+
+<section id="fail" class="screen">
+  <h2 class="bad">Officer down</h2>
+  <p class="tag">The ghouls got the better of you this time.</p>
+  <button class="big main" id="btnRetry2">Try again</button>
+  <button class="link" id="btnMap2">Case map</button>
+</section>
+
+<section id="pause" class="screen">
+  <h2>Paused</h2>
+  <button class="big main" id="btnResume">Resume</button>
+  <button class="big alt" id="btnSettings2">Settings</button>
+  <button class="link" id="btnQuit">Quit to case map</button>
+</section>
+
+<section id="settings" class="screen">
+  <h2>Settings</h2>
+  <div class="field"><div class="row"><span>Trigger gesture</span></div>
+    <div class="seg" data-key="trigger"><button data-v="thumb">Thumb drop</button><button data-v="pinch">Pinch</button></div>
+    <small>Thumb drop is the finger gun. Pinch is easier if the camera sees your hand edge-on.</small></div>
+  <div class="field"><div class="row"><span>Trigger point</span><span id="vTrig"></span></div>
+    <input type="range" id="sTrig" min="20" max="70">
+    <small>Raise it if shots won't fire, lower it if shots fire on their own.</small></div>
+  <div class="field"><div class="row"><span>Aim smoothing</span><span id="vSmooth"></span></div>
+    <input type="range" id="sSmooth" min="0" max="100"></div>
+  <div class="field"><div class="row"><span>Reach</span><span id="vReach"></span></div>
+    <input type="range" id="sReach" min="5" max="35">
+    <small>Higher means smaller hand movements cover the screen, and fewer accidental recharges at the edges.</small></div>
+  <div class="field"><div class="row"><span>Aim assist</span></div>
+    <div class="seg" data-key="assist"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
+  <div class="field"><div class="row"><span>Sound and vibration</span></div>
+    <div class="seg" data-key="sound"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
+  <button class="big main" id="btnCloseSettings">Done</button>
+  <button class="link danger" id="btnReset">Reset case progress</button>
+</section>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
