@@ -17,15 +17,22 @@
 <canvas id="pv" width="80" height="106"></canvas>
 <button id="pauseBtn" class="icon-btn" aria-label="Pause">❚❚</button>
 <button id="rechargeBtn">Recharge</button>
+<div id="weaponBar">
+  <button data-w="gun" aria-label="Spirit Gun">👉</button>
+  <button data-w="knife" aria-label="Spirit Knife">🗡️</button>
+  <button data-w="punch" aria-label="Spirit Punch">👊</button>
+</div>
 
 <section id="title" class="screen show">
-  <div class="logo"><small>Mark Dave's</small><span>Night</span><span>Division</span></div>
-  <p class="tag">Port Lumen's secret police unit for cases that aren't human. Your only weapon is your spirit.</p>
+  <div class="logo"><small>Mark Dave's</small><span>Night</span><span>Division</span><em>Dilim ng Maynila</em></div>
+  <p class="tag">Manila's secret unit against the creatures of the Ilalim. Your weapons are your spirit: a gun, a blade and a fist.</p>
   <div class="how">
     <div><b>Aim</b>Point your finger gun</div>
     <div><b>Shoot</b>Drop your thumb</div>
     <div><b>Blast</b>Hold your thumb down</div>
     <div><b>Recharge</b>Move your hand out of view</div>
+    <div><b>Switch weapon</b>Hold up an open palm</div>
+    <div><b>Knife &amp; Punch</b>Swipe fast, or punch at the screen</div>
   </div>
   <div class="msg" id="titleMsg"></div>
   <button class="big main" id="btnCamera">Start with camera</button>
@@ -53,6 +60,10 @@
     <div class="objhead">Objectives</div>
     <ul id="bObj"></ul>
   </div>
+  <div class="field" id="bPractice"><div class="row"><span>Practice mode</span></div>
+    <div class="seg" data-key="practiceMode"><button data-v="ghouls">Endless ghouls</button><button data-v="bosses">Boss rush</button></div></div>
+  <div class="field" id="bWeapon"><div class="row"><span>Starting weapon</span></div>
+    <div class="seg" data-key="weapon"><button data-v="gun">👉 Gun</button><button data-v="knife">🗡️ Knife</button><button data-v="punch">👊 Punch</button></div></div>
   <button class="big main" id="btnBegin">Begin patrol</button>
   <button class="link" id="btnBriefBack">Case map</button>
 </section>
@@ -85,7 +96,7 @@
   <h2>Paused</h2>
   <button class="big main" id="btnResume">Resume</button>
   <button class="big alt" id="btnSettings2">Settings</button>
-  <button class="link" id="btnQuit">Quit to case map</button>
+  <button class="link" id="btnQuit">Quit</button>
 </section>
 
 <section id="settings" class="screen">
